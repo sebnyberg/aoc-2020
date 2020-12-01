@@ -26,8 +26,11 @@ func main() {
 		check(err)
 		ns = append(ns, cur)
 		for i := 0; i < len(ns)-1; i++ {
-			if ns[i]+cur == 2020 {
-				fmt.Printf("%d * %d = %d\n", ns[i], cur, ns[i]*cur)
+			for j := i + 1; j < len(ns)-1; j++ {
+				n1, n2 := ns[i], ns[j]
+				if n1+n2+cur == 2020 {
+					fmt.Printf("%d * %d * %d = %d\n", ns[i], ns[j], cur, ns[i]*ns[j]*cur)
+				}
 			}
 		}
 	}
