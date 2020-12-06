@@ -4,6 +4,7 @@ import (
 	"aoc2020/a04"
 	"bufio"
 	"bytes"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,4 +37,70 @@ func Test_ScanPassport(t *testing.T) {
 	require.Equal(t, `hcl:#ae17e1 iyr:2013 eyr:2024 ecl:brn pid:760753108 byr:1931 hgt:179cm`, s.Text())
 	s.Scan()
 	require.Equal(t, `hcl:#cfa07d eyr:2025 pid:166559648 iyr:2011 ecl:brn hgt:59in`, s.Text())
+}
+
+var invalidPassports = `eyr:1972 cid:100
+hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
+
+iyr:2019
+hcl:#602927 eyr:1967 hgt:170cm
+ecl:grn pid:012533040 byr:1946
+
+hcl:dab227 iyr:2012
+ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
+
+hgt:59cm ecl:zzz
+eyr:2038 hcl:74454a iyr:2023
+pid:3556412378 byr:2007`
+
+var validPassports = `pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
+hcl:#623a2f
+
+eyr:2029 ecl:blu cid:129 byr:1989
+iyr:2014 pid:896056539 hcl:#a97842 hgt:165cm
+
+hcl:#888785
+hgt:164cm byr:2001 iyr:2015 cid:88
+pid:545766238 ecl:hzl
+eyr:2022
+
+iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719`
+
+func Test_Validation(t *testing.T) {
+	f := bytes.NewBufferString(invalidPassports)
+	sc := bufio.NewScanner(f)
+	sc.Split(a04.ScanPassport)
+	for sc.Scan() {
+		p := a04.ParsePassportRow(sc.Text())
+		validationErr := p.Validate()
+		if validationErr == nil {
+			t.Errorf("%+v was valid but should be invalid", p)
+		}
+	}
+	// Valid passports
+	f = bytes.NewBufferString(validPassports)
+	sc = bufio.NewScanner(f)
+	sc.Split(a04.ScanPassport)
+	for sc.Scan() {
+		p := a04.ParsePassportRow(sc.Text())
+		validationErr := p.Validate()
+		if validationErr != nil {
+			t.Errorf("%+v was invalid but should be valid, err: %v", p, validationErr)
+		}
+	}
+}
+
+func Test_Something(t *testing.T) {
+	hclRegex := *regexp.MustCompile(`^#[a-f0-9]{6}$`)
+	for _, tc := range []struct {
+		in       string
+		expected bool
+	}{
+		{`a6f86d`, false},
+		{`#ceb3a1`, true},
+	} {
+		t.Run(tc.in, func(t *testing.T) {
+			require.Equal(t, tc.expected, hclRegex.MatchString(tc.in))
+		})
+	}
 }
