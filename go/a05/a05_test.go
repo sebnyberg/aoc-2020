@@ -2,12 +2,13 @@ package a05_test
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func check(err error) {
@@ -68,9 +69,7 @@ func Test_ParseAnswers(t *testing.T) {
 			}
 		}
 	}
-	fmt.Println(total)
-
-	t.FailNow()
+	require.Equal(t, 3039, total)
 }
 
 func parseAnswers(r io.Reader) [][]string {
