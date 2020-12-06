@@ -235,7 +235,7 @@ func Test_Validate(t *testing.T) {
 		t.Logf("[%d] VALID", i)
 		valid++
 	}
-	require.Equal(t, 189, valid)
+	require.Equal(t, 184, valid)
 }
 
 func Test_ParseInput(t *testing.T) {
