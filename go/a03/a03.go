@@ -1,22 +1,15 @@
-package main
+package a03
 
 import (
 	"bufio"
 	"fmt"
-	"log"
-	"os"
+	"io"
 )
-
-func check(err error) {
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
 const rowlen = len("...#...###......##.#..#.....##.")
 
 // Get next position
-func nextPos(rowlen int, cur int, right int, down int) int {
+func NextPos(rowlen int, cur int, right int, down int) int {
 	if cur%rowlen+right >= rowlen {
 		down--
 	}
@@ -25,24 +18,23 @@ func nextPos(rowlen int, cur int, right int, down int) int {
 }
 
 // Count number of valid passwords found in the file
-func main() {
+func Run(f io.ReadSeeker) {
 	multipliedTrees := 1
 	for _, pair := range [][]int{{1, 1}, {3, 1}, {5, 1}, {7, 1}, {1, 2}} {
+		f.Seek(0, io.SeekStart)
 		right, down := pair[0], pair[1]
 		trees := 0
-		f, err := os.Open("03/input")
-		check(err)
 		sc := bufio.NewScanner(f)
 		sc.Split(bufio.ScanRunes)
 		i := 0
-		pos := nextPos(rowlen, 0, right, down)
+		pos := NextPos(rowlen, 0, right, down)
 		for sc.Scan() {
 			ch := sc.Text()
 			if ch == "\n" {
 				continue
 			}
 			if i == pos {
-				pos = nextPos(rowlen, pos, right, down)
+				pos = NextPos(rowlen, pos, right, down)
 				if ch == "#" {
 					trees++
 				}

@@ -1,6 +1,7 @@
-package main
+package a03_test
 
 import (
+	"aoc2020/a03"
 	"fmt"
 	"testing"
 
@@ -21,7 +22,7 @@ func Test_SkiSlope(t *testing.T) {
 			var cur int
 			for _, expected := range tc.want {
 				require.Equal(t, expected, cur)
-				cur = nextPos(rowlen, cur, tc.right, tc.down)
+				cur = a03.NextPos(rowlen, cur, tc.right, tc.down)
 			}
 		})
 	}
