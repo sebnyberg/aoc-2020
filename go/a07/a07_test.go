@@ -1,8 +1,10 @@
 package a06_test
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"unicode"
@@ -16,38 +18,137 @@ func check(err error) {
 	}
 }
 
-var testInput = `light red bags contain 1 bright white bag, 2 muted yellow bags.
-dark orange bags contain 3 bright white bags, 4 muted yellow bags.
-bright white bags contain 1 shiny gold bag.
-muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
-shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
-dark olive bags contain 3 faded blue bags, 4 dotted black bags.
-vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
-faded blue bags contain no other bags.
-dotted black bags contain no other bags.`
+func Test_countBagsInShinyGold(t *testing.T) {
+	f, err := os.Open("input")
+	check(err)
+
+	sc := bufio.NewScanner(f)
+
+	// Read list of bag -> contained bags from input file
+	bagsList := make([]ColoredBag, 0)
+	for sc.Scan() {
+		bag, err := ParseBag(sc.Text())
+		check(err)
+		bagsList = append(bagsList, bag)
+	}
+
+	// Create map of bag id -> bags inside + count
+	bags := make(map[string]map[string]int)
+	for _, bag := range bagsList {
+		bags[bag.id] = bag.bagsInside
+	}
+
+	// Bags to add
+	require.Equal(t, 1, countBagsInside(bags, "shiny gold"))
+}
+
+func countBagsInside(bagsMap map[string]map[string]int, bagID string) int {
+	var sum int
+	for insideBagID, insideBagCount := range bagsMap[bagID] {
+		sum += insideBagCount
+		sum += insideBagCount * countBagsInside(bagsMap, insideBagID)
+	}
+	return sum
+}
+
+func Test_findShinyGold(t *testing.T) {
+	f, err := os.Open("input")
+	check(err)
+
+	sc := bufio.NewScanner(f)
+
+	// Read list of bag -> contained bags from input file
+	bags := make([]ColoredBag, 0)
+	for sc.Scan() {
+		bag, err := ParseBag(sc.Text())
+		check(err)
+		bags = append(bags, bag)
+	}
+
+	// List of BagIDs which contain the sought-after bag
+	require.Equal(t, 177, len(findShinyGold(bags)))
+}
+
+func findShinyGold(rawBags []ColoredBag) map[string]struct{} {
+	// Read list of bag -> contained bags from input file
+	bags := map[string]map[string]struct{}{}
+	for _, bag := range rawBags {
+		if _, exists := bags[bag.id]; exists {
+			log.Fatalln("same bag parsed twice... possible error")
+		}
+		bags[bag.id] = make(map[string]struct{})
+		for containedBagID := range bag.bagsInside {
+			bags[bag.id][containedBagID] = struct{}{}
+		}
+	}
+
+	containsBag := map[string]struct{}{}
+
+	// How many bag colors can eventually contain at least one shiny gold bag?
+	// Going with brute-force
+	for bagID := range bags {
+		// Keep track of which bags we've seen so far to avoid circular dependencies
+		seen := make(map[string]struct{})
+		seen[bagID] = struct{}{}
+
+		check := make(map[string]struct{})
+		for k := range bags[bagID] {
+			check[k] = struct{}{}
+		}
+
+		var cur string
+		for len(check) > 0 {
+			// Pick first bag
+			for cur = range check {
+				break
+			}
+
+			// Check if current is the sought-after bag
+			if cur == "shiny gold" {
+				containsBag[bagID] = struct{}{}
+				break
+			}
+
+			// Mark bag as seen
+			seen[cur] = struct{}{}
+
+			// Add any unseen bags contained in this bag to list of bags to check
+			for containedBagID := range bags[cur] {
+				if _, exists := seen[containedBagID]; !exists {
+					check[containedBagID] = struct{}{}
+				}
+			}
+
+			// Remove current from list of bags to check
+			delete(check, cur)
+		}
+	}
+
+	return containsBag
+}
 
 func Test_BagParser(t *testing.T) {
 	for _, tc := range []struct {
 		in      string
-		want    ContainerBag
+		want    ColoredBag
 		wantErr error
 	}{
 		{
 			"light red bags contain 1 bright white bag, 2 muted yellow bags.",
-			ContainerBag{
-				"light red bags",
-				[]BagCount{
-					{1, "bright white bag"},
-					{2, "muted yellow bags"},
+			ColoredBag{
+				"light red",
+				map[string]int{
+					"bright white": 1,
+					"muted yellow": 2,
 				},
 			},
 			nil,
 		},
 		{
 			"faded blue bags contain no other bags.",
-			ContainerBag{
-				"faded blue bags",
-				[]BagCount{},
+			ColoredBag{
+				"faded blue",
+				map[string]int{},
 			},
 			nil,
 		},
@@ -65,23 +166,18 @@ type BagParser struct {
 	curIdx int
 }
 
-type BagCount struct {
-	count int
-	bagID string
+type ColoredBag struct {
+	id         string
+	bagsInside map[string]int
 }
 
-type ContainerBag struct {
-	bagID         string
-	containedBags []BagCount
-}
-
-func ParseBag(row string) (ContainerBag, error) {
+func ParseBag(row string) (ColoredBag, error) {
 	bp := BagParser{s: []rune(row)}
 	return bp.ParseContainerBag()
 }
 
-func (p *BagParser) ParseContainerBag() (res ContainerBag, err error) {
-	res.bagID, err = p.ParseBagID()
+func (p *BagParser) ParseContainerBag() (res ColoredBag, err error) {
+	res.id, err = p.ParseBagID()
 	if err != nil {
 		return
 	}
@@ -91,14 +187,14 @@ func (p *BagParser) ParseContainerBag() (res ContainerBag, err error) {
 	if err = p.ParseContainSeparator(); err != nil {
 		return
 	}
-	res.containedBags, err = p.ParseContainedBags()
+	res.bagsInside, err = p.ParseContainedBags()
 	return
 }
 
 // Parse the BagID. Expected to be in this format:
 // "some bag name"
 func (p *BagParser) ParseBagID() (s string, err error) {
-	bagWords := make([]string, 3)
+	bagWords := make([]string, 2)
 
 	for i := 0; i < 2; i++ {
 		// Parse word
@@ -113,9 +209,8 @@ func (p *BagParser) ParseBagID() (s string, err error) {
 		}
 	}
 
-	// Parse final word (do not parse the trailing ',' or '.')
-	bagWords[2], err = p.ParseWord()
-	if err != nil {
+	// Parse "bag[s]" - throw it away
+	if _, err = p.ParseWord(); err != nil {
 		return
 	}
 
@@ -166,8 +261,8 @@ func (p *BagParser) ParseWhitespace() error {
 	return nil
 }
 
-func (p *BagParser) ParseContainedBags() ([]BagCount, error) {
-	bagCount := make([]BagCount, 0)
+func (p *BagParser) ParseContainedBags() (bagAndCount map[string]int, err error) {
+	bagCount := make(map[string]int)
 
 	for {
 		// Parse BagCount
@@ -175,11 +270,11 @@ func (p *BagParser) ParseContainedBags() ([]BagCount, error) {
 		case 'n':
 			return bagCount, nil
 		default:
-			newBag, err := p.ParseBagCount()
+			count, id, err := p.ParseBagCount()
 			if err != nil {
 				return nil, err
 			}
-			bagCount = append(bagCount, newBag)
+			bagCount[id] = count
 		}
 
 		// Parse separator
@@ -193,15 +288,15 @@ func (p *BagParser) ParseContainedBags() ([]BagCount, error) {
 	}
 }
 
-func (p *BagParser) ParseBagCount() (bagCount BagCount, err error) {
-	bagCount.count, err = p.ParseDigit()
+func (p *BagParser) ParseBagCount() (count int, id string, err error) {
+	count, err = p.ParseDigit()
 	if err != nil {
 		return
 	}
 	if err = p.ParseWhitespace(); err != nil {
 		return
 	}
-	bagCount.bagID, err = p.ParseBagID()
+	id, err = p.ParseBagID()
 	return
 }
 
