@@ -27,7 +27,7 @@ func Test_findMissingSeat(t *testing.T) {
 	}{
 		{[]int{1, 3}, 2},
 		{[]int{1, 2, 3, 4, 7}, 5},
-		{getSeatIDs(bytes.NewBufferString(string(input))), 5},
+		{getSeatIDs(bytes.NewBufferString(string(input))), 696},
 	} {
 		t.Run(fmt.Sprintf("%v", i), func(t *testing.T) {
 			require.Equal(t, tc.want, findMissingSeat(tc.in))
