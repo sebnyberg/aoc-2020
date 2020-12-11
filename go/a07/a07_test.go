@@ -39,7 +39,7 @@ func Test_countBagsInShinyGold(t *testing.T) {
 	}
 
 	// Bags to add
-	require.Equal(t, 1, countBagsInside(bags, "shiny gold"))
+	require.Equal(t, 34988, countBagsInside(bags, "shiny gold"))
 }
 
 func countBagsInside(bagsMap map[string]map[string]int, bagID string) int {
