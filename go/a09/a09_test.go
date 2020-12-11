@@ -2,9 +2,9 @@ package a09_test
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"testing"
 
@@ -18,27 +18,29 @@ func check(err error) {
 }
 
 func Test_day9(t *testing.T) {
-	input := `35
-20
-15
-25
-47
-40
-62
-55
-65
-95
-102
-117
-150
-182
-127
-219
-299
-277
-309
-576`
-	f := bytes.NewBufferString(input)
+	// 	input := `35
+	// 20
+	// 15
+	// 25
+	// 47
+	// 40
+	// 62
+	// 55
+	// 65
+	// 95
+	// 102
+	// 117
+	// 150
+	// 182
+	// 127
+	// 219
+	// 299
+	// 277
+	// 309
+	// 576`
+	// 	f := bytes.NewBufferString(input)
+	f, err := os.Open("input")
+	check(err)
 	sc := bufio.NewScanner(f)
 	// The plan here is to make a triangle-ish array of arrays
 	// Where sums are added as new numbers are added, like this:
@@ -54,7 +56,7 @@ func Test_day9(t *testing.T) {
 	// ...and so on
 	// To check if a new number satisfies the requirements, simply
 	// iterate over all arrays from index 1:end and check if there is a match
-	npreamble := 5
+	npreamble := 25
 	ns := make([][]int, 0)
 	var i int
 	for sc.Scan() {
