@@ -1,4 +1,4 @@
-package a06_test
+package a07_test
 
 import (
 	"bufio"
