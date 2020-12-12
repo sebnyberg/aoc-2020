@@ -2,13 +2,14 @@ package a12_test
 
 import (
 	"bufio"
-	"fmt"
+	"bytes"
 	"log"
-	"os"
+	"math"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gotest.tools/assert"
 )
 
 func check(err error) {
@@ -17,24 +18,36 @@ func check(err error) {
 	}
 }
 
-const (
-	East  int = 0
-	South int = 1
-	West  int = 2
-	North int = 3
-)
+type ship struct {
+	x          int
+	y          int
+	rotDegrees int
+}
 
-func Test_day12(t *testing.T) {
-	// 	f := bytes.NewBufferString(`F10
-	// N3
-	// F7
-	// R90
-	// F11`)
-	f, err := os.Open("input")
-	check(err)
+func Test_move(t *testing.T) {
+	rot := 90
+	dir := int(math.Sin((float64(rot) / 360) * 2 * math.Pi))
+	require.Equal(t, 1, dir)
+}
+
+func (p *ship) move(units int) {
+	y := int(math.Sin((float64(p.rotDegrees)/360)*2*math.Pi)) * units
+	p.y += y
+	x := int(math.Cos((float64(p.rotDegrees)/360)*2*math.Pi)) * units
+	p.x += x
+	// fmt.Println(p.x, p.y, x, y)
+}
+
+func Test_day12_part1(t *testing.T) {
+	f := bytes.NewBufferString(`F10
+N3
+F7
+R90
+F11`)
+	// f, err := os.Open("input")
+	// check(err)
 	sc := bufio.NewScanner(f)
-	var x, y int
-	dir := 0
+	var s ship
 	for sc.Scan() {
 		row := sc.Text()
 		action := row[0]
@@ -42,62 +55,52 @@ func Test_day12(t *testing.T) {
 		check(err)
 		switch action {
 		case 'N':
-			y += val
+			s.y += val
 		case 'S':
-			y -= val
+			s.y -= val
 		case 'E':
-			x += val
+			s.x += val
 		case 'W':
-			x -= val
+			s.x -= val
 		case 'L':
-			dir = rotateDir(dir, -val)
+			s.rotDegrees += val
 		case 'R':
-			dir = rotateDir(dir, val)
+			s.rotDegrees -= val
 		case 'F':
-			switch dir {
-			case East:
-				x += val
-			case West:
-				x -= val
-			case North:
-				y += val
-			case South:
-				y -= val
-			}
+			s.move(val)
 		}
 	}
-	// assert.Equal(t, 10, pos(x))
-	// assert.Equal(t, 10, pos(y))
-	require.Equal(t, 100, pos(x)+pos(y))
+	assert.Equal(t, 17, s.x)
+	assert.Equal(t, -8, s.y)
 }
 
-func Test_rotateDir(t *testing.T) {
-	testCases := []struct {
-		inDir int
-		inVal int
-		want  int
-	}{
-		{0, -90, 3},
-		{0, 0, 0},
-		{3, -90, 2},
-		{3, 90, 0},
-		{3, 180, 1},
-	}
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%v/%v", tc.inDir, tc.inVal), func(t *testing.T) {
-			require.Equal(t, tc.want, rotateDir(tc.inDir, tc.inVal))
-		})
-	}
-}
+// func Test_rotateDir(t *testing.T) {
+// 	testCases := []struct {
+// 		inDir int
+// 		inVal int
+// 		want  int
+// 	}{
+// 		{0, -90, 3},
+// 		{0, 0, 0},
+// 		{3, -90, 2},
+// 		{3, 90, 0},
+// 		{3, 180, 1},
+// 	}
+// 	for _, tc := range testCases {
+// 		t.Run(fmt.Sprintf("%v/%v", tc.inDir, tc.inVal), func(t *testing.T) {
+// 			require.Equal(t, tc.want, rotateDir(tc.inDir, tc.inVal))
+// 		})
+// 	}
+// }
 
-func rotateDir(dir int, val int) int {
-	rot := (val / 90)
-	dir = dir + rot
-	if dir < 0 {
-		dir = 4 + dir
-	}
-	return dir % 4
-}
+// func rotateDir(dir int, val int) int {
+// 	rot := (val / 90)
+// 	dir = dir + rot
+// 	if dir < 0 {
+// 		dir = 4 + dir
+// 	}
+// 	return dir % 4
+// }
 
 func pos(i int) int {
 	if i < 0 {
