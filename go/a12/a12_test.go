@@ -2,9 +2,9 @@ package a12_test
 
 import (
 	"bufio"
-	"bytes"
+	"fmt"
 	"log"
-	"math"
+	"os"
 	"strconv"
 	"testing"
 
@@ -18,36 +18,17 @@ func check(err error) {
 	}
 }
 
-type ship struct {
-	x          int
-	y          int
-	rotDegrees int
-}
-
-func Test_move(t *testing.T) {
-	rot := 90
-	dir := int(math.Sin((float64(rot) / 360) * 2 * math.Pi))
-	require.Equal(t, 1, dir)
-}
-
-func (p *ship) move(units int) {
-	y := int(math.Sin((float64(p.rotDegrees)/360)*2*math.Pi)) * units
-	p.y += y
-	x := int(math.Cos((float64(p.rotDegrees)/360)*2*math.Pi)) * units
-	p.x += x
-	// fmt.Println(p.x, p.y, x, y)
-}
-
-func Test_day12_part1(t *testing.T) {
-	f := bytes.NewBufferString(`F10
-N3
-F7
-R90
-F11`)
-	// f, err := os.Open("input")
-	// check(err)
+func Test_day12(t *testing.T) {
+	f, err := os.Open("input")
+	check(err)
 	sc := bufio.NewScanner(f)
-	var s ship
+	var x, y int
+
+	printPos := func(markerX, markerY, x, y int) {
+		fmt.Printf("Pos = (%03d, %03d) M = (%03d, %03d)\n", x, y, markerX, markerY)
+	}
+	markerX := 10
+	markerY := 1
 	for sc.Scan() {
 		row := sc.Text()
 		action := row[0]
@@ -55,56 +36,72 @@ F11`)
 		check(err)
 		switch action {
 		case 'N':
-			s.y += val
+			markerY += val
 		case 'S':
-			s.y -= val
+			markerY -= val
 		case 'E':
-			s.x += val
+			markerX += val
 		case 'W':
-			s.x -= val
+			markerX -= val
 		case 'L':
-			s.rotDegrees += val
+			markerX, markerY = rotateMarker(markerX, markerY, val)
 		case 'R':
-			s.rotDegrees -= val
+			markerX, markerY = rotateMarker(markerX, markerY, -val)
 		case 'F':
-			s.move(val)
+			x += val * markerX
+			y += val * markerY
 		}
+		printPos(markerX, markerY, x, y)
 	}
-	assert.Equal(t, 17, s.x)
-	assert.Equal(t, -8, s.y)
+	require.Equal(t, 28885, abs(x)+abs(y))
 }
 
-// func Test_rotateDir(t *testing.T) {
-// 	testCases := []struct {
-// 		inDir int
-// 		inVal int
-// 		want  int
-// 	}{
-// 		{0, -90, 3},
-// 		{0, 0, 0},
-// 		{3, -90, 2},
-// 		{3, 90, 0},
-// 		{3, 180, 1},
-// 	}
-// 	for _, tc := range testCases {
-// 		t.Run(fmt.Sprintf("%v/%v", tc.inDir, tc.inVal), func(t *testing.T) {
-// 			require.Equal(t, tc.want, rotateDir(tc.inDir, tc.inVal))
-// 		})
-// 	}
-// }
-
-// func rotateDir(dir int, val int) int {
-// 	rot := (val / 90)
-// 	dir = dir + rot
-// 	if dir < 0 {
-// 		dir = 4 + dir
-// 	}
-// 	return dir % 4
-// }
-
-func pos(i int) int {
-	if i < 0 {
-		return -i
+func abs(n int) int {
+	if n < 0 {
+		return -n
 	}
-	return i
+	return n
+}
+
+func Test_rotateMarker(t *testing.T) {
+	for _, tc := range []struct {
+		inX     int
+		inY     int
+		degrees int
+		wantX   int
+		wantY   int
+	}{
+		{10, 1, -90, 1, -10},
+		{10, 1, 0, 10, 1},
+		{10, 1, 90, -1, 10},
+		{10, 1, 180, -10, -1},
+		{10, 1, 270, 1, -10},
+		{10, 1, 360, 10, 1},
+		{10, 1, 450, -1, 10},
+	} {
+		t.Run(fmt.Sprintf("(%v,%v)+%v", tc.inX, tc.inY, tc.degrees), func(t *testing.T) {
+			gotX, gotY := rotateMarker(tc.inX, tc.inY, tc.degrees)
+			assert.Equal(t, tc.wantX, gotX)
+			assert.Equal(t, tc.wantY, gotY)
+		})
+	}
+}
+
+func rotateMarker(curX, curY int, degrees int) (newX, newY int) {
+	if degrees < 0 {
+		degrees = 360 + (degrees % 360)
+	}
+	newX, newY = curX, curY
+	switch degrees % 360 {
+	case 90:
+		newX = -curY
+		newY = curX
+	case 180:
+		newX = -curX
+		newY = -curY
+	case 270:
+		newX = curY
+		newY = -curX
+	}
+	return newX, newY
 }
