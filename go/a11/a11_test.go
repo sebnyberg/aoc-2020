@@ -128,8 +128,7 @@ func Test_day11_part2(t *testing.T) {
 		}
 	}
 
-	require.Equal(t, 0, noccupied)
-	t.FailNow()
+	require.Equal(t, 2066, noccupied)
 }
 
 func simulateArrival2(before [][]rune) [][]rune {

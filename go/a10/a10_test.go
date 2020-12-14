@@ -1,113 +1,92 @@
 package a10_test
 
+// import (
+// 	"bufio"
+// 	"fmt"
+// 	"log"
+// 	"os"
+// 	"sort"
+// 	"strconv"
+// 	"testing"
+// )
+
 // func check(err error) {
 // 	if err != nil {
 // 		log.Fatalln(err)
 // 	}
 // }
 
-// func Test_day10part1(t *testing.T) {
-// 	var err error
-// 	var f io.Reader
-// 	// Read inputs, each row is an adapter with an output joltage
-// 	// Each adapter can take an input outputJoltage-3 <= jolt <= outputJoltage
-// 	f, err = os.Open("input")
+// func Test_Day10(t *testing.T) {
+// 	f, err := os.Open("testinput4")
 // 	check(err)
-
 // 	sc := bufio.NewScanner(f)
-// 	ns := make([]int, 0)
-// 	var n int
+// 	adapters := make([]int, 0)
 // 	for sc.Scan() {
-// 		n, err = strconv.Atoi(sc.Text())
+// 		n, err := strconv.Atoi(sc.Text())
 // 		check(err)
-// 		ns = append(ns, n)
+// 		adapters = append(adapters, n)
 // 	}
-// 	sort.Ints(ns)
+// 	// Append initial adapter
+// 	adapters = append(adapters, 0)
+// 	sort.Ints(adapters)
 
-// 	prevN := ns[0]
-// 	n1jolt := 0
-// 	n3jolt := 1
+// 	printArr(adapters)
 
-// 	if ns[0] == 1 {
-// 		n1jolt++
-// 	}
-// 	if ns[0] == 3 {
-// 		n3jolt++
-// 	}
-// 	for _, n := range ns[1:] {
-// 		if n == prevN {
-// 			panic("prevN == n, should not happen")
+// 	arrs := 1
+// 	// Count arrangements for each section
+// 	j := 0
+// 	for i := 1; i < len(adapters); i++ {
+// 		if adapters[i]-adapters[i-1] == 3 {
+// 			printArr(adapters[j:i])
+// 			sectionArrs := getArrs(adapters[j:i])
+// 			fmt.Println("section arrs: ", sectionArrs)
+// 			arrs *= sectionArrs
+// 			j = i - 1
 // 		}
-// 		// End condition
-// 		if n-prevN > 3 {
-// 			break
-// 		}
-
-// 		if n-prevN == 1 {
-// 			n1jolt++
-// 		}
-
-// 		if n-prevN == 3 {
-// 			n3jolt++
-// 		}
-// 		prevN = n
 // 	}
 
-// 	fmt.Println(n1jolt)
-// 	fmt.Println(n3jolt)
-// 	fmt.Println(n1jolt * n3jolt)
-// 	t.FailNow()
-// }
-
-// func Test_day10part2(t *testing.T) {
-// 	var err error
-// 	var f io.Reader
-// 	// Read inputs, each row is an adapter with an output joltage
-// 	// Each adapter can take an input outputJoltage-3 <= jolt <= outputJoltage
-// 	f, err = os.Open("input")
-// 	check(err)
-
-// 	sc := bufio.NewScanner(f)
-// 	ns := make([]int, 0)
-// 	var n int
-// 	for sc.Scan() {
-// 		n, err = strconv.Atoi(sc.Text())
-// 		check(err)
-// 		ns = append(ns, n)
-// 	}
-// 	sort.Ints(ns)
+// 	fmt.Println(arrs)
 
 // 	t.FailNow()
 // }
 
-// // Notes:
-// // * The total number of configurations is the sum of the number of configs
-// // 	for each section separated by a distance of 2.
+// var depth = 0
+// var iter = 0
 
-// func Test_countConfigurations(t *testing.T) {
-// 	in := []int{0, 1, 4, 5, 6, 7, 10, 11, 12, 15, 16, 19, 22}
-// 	got := countConfigurations(in)
-// 	require.Equal(t, 8, got)
+// func getArrs(adapters []int) int {
+// 	arrs := 1
 
-// 	in2 := []int{0, 1, 2, 3, 4, 7, 8, 9, 10, 11, 14, 17, 18, 19, 20, 23, 24, 25, 28, 31,
-// 		32, 33, 34, 35, 38, 39, 42, 45, 46, 47, 48, 49, 52}
-// 	got = countConfigurations(in2)
-// 	require.Equal(t, 19208, got)
+// 	// fmt.Println("depth", depth)
+// 	depth++
+// 	iter++
+// 	if depth > 100 || iter%1000 == 0 {
+// 		fmt.Println(depth, iter)
+// 	}
+
+// 	// Plan: when faced with a removal option,
+// 	// run and return getArrs with the item removed
+// 	for i := 2; i < len(adapters); i++ {
+// 		if adapters[i]-adapters[i-2] <= 3 {
+// 			// printArr(adapters)
+// 			// fmt.Printf("removing item %v at %v\n", adapters[i-1], i)
+// 			// Try to remove the middle adapter and run getArrs again
+// 			withoutElem := make([]int, len(adapters))
+// 			copy(withoutElem, adapters)
+// 			withoutElem = append(withoutElem[i-2:i-1], withoutElem[i:]...)
+// 			arrs += getArrs(withoutElem)
+// 		}
+// 	}
+
+// 	depth--
+
+// 	return arrs
 // }
 
-// func countConfigurations(ns []int) int {
-// 	var i, j int
-// 	// nconfig := 1
-
-// 	for j < len(ns) {
-// 		// Tactic: increment j until ns[j] - ns[i] > 3
-// 		for ns[j]-ns[i] <= 3 && j < len(ns) {
-// 			j++
-// 		}
-// 		fmt.Println(ns[i:j])
-// 		fmt.Println(1 << (j - i - 2))
-// 		i = j - 1
-// 		j++
+// func printArr(adapters []int) {
+// 	fmt.Print("(", adapters[0], "), ")
+// 	for _, a := range adapters[1:] {
+// 		fmt.Print(a, ", ")
 // 	}
-// 	return 0
+// 	fmt.Print("(", adapters[len(adapters)-1]+3, ")")
+// 	fmt.Printf("\n")
 // }
