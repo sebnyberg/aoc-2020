@@ -1,92 +1,91 @@
 package a10_test
 
-// import (
-// 	"bufio"
-// 	"fmt"
-// 	"log"
-// 	"os"
-// 	"sort"
-// 	"strconv"
-// 	"testing"
-// )
+import (
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"sort"
+	"strconv"
+	"testing"
 
-// func check(err error) {
-// 	if err != nil {
-// 		log.Fatalln(err)
-// 	}
-// }
+	"github.com/stretchr/testify/require"
+)
 
-// func Test_Day10(t *testing.T) {
-// 	f, err := os.Open("testinput4")
-// 	check(err)
-// 	sc := bufio.NewScanner(f)
-// 	adapters := make([]int, 0)
-// 	for sc.Scan() {
-// 		n, err := strconv.Atoi(sc.Text())
-// 		check(err)
-// 		adapters = append(adapters, n)
-// 	}
-// 	// Append initial adapter
-// 	adapters = append(adapters, 0)
-// 	sort.Ints(adapters)
+func check(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
 
-// 	printArr(adapters)
+func Test_day10(t *testing.T) {
+	f, err := os.Open("input")
+	check(err)
+	sc := bufio.NewScanner(f)
+	ns := make([]int, 0, 50)
+	ns = append(ns, 0)
+	for sc.Scan() {
+		n, err := strconv.Atoi(sc.Text())
+		check(err)
+		ns = append(ns, n)
+	}
+	sort.Ints(ns)
+	segs := findSegments(ns)
+	narr := 1
+	for _, seg := range segs {
+		fmt.Println(len(seg))
+		printArr(seg)
+		switch len(seg) {
+		case 3:
+			narr *= 2
+		case 4:
+			narr *= 4
+		case 5:
+			narr *= 7
+		}
+	}
 
-// 	arrs := 1
-// 	// Count arrangements for each section
-// 	j := 0
-// 	for i := 1; i < len(adapters); i++ {
-// 		if adapters[i]-adapters[i-1] == 3 {
-// 			printArr(adapters[j:i])
-// 			sectionArrs := getArrs(adapters[j:i])
-// 			fmt.Println("section arrs: ", sectionArrs)
-// 			arrs *= sectionArrs
-// 			j = i - 1
-// 		}
-// 	}
+	require.Equal(t, 84627647627264, narr)
+}
 
-// 	fmt.Println(arrs)
+func Test_findSegments(t *testing.T) {
+	for _, tc := range []struct {
+		in   []int
+		want [][]int
+	}{
+		{[]int{1, 2, 3, 4}, [][]int{{1, 2, 3, 4}}},
+		{[]int{1, 2, 3, 4, 7, 8}, [][]int{{1, 2, 3, 4}, {7, 8}}},
+		{[]int{1, 4, 7, 8, 11, 14, 17}, [][]int{{1}, {4}, {7, 8}, {11}, {14}, {17}}},
+	} {
+		t.Run(fmt.Sprintf("%v", tc.in), func(t *testing.T) {
+			require.Equal(t, tc.want, findSegments(tc.in))
+		})
+	}
+}
 
-// 	t.FailNow()
-// }
+func findSegments(in []int) [][]int {
+	segment := 0
+	res := [][]int{
+		{in[0]},
+	}
+	for i := 1; i < len(in); i++ {
+		if in[i]-in[i-1] == 2 {
+			panic("wut a 2")
+		}
+		if in[i]-in[i-1] == 3 {
+			segment++
+			res = append(res, []int{in[i]})
+			continue
+		}
+		res[segment] = append(res[segment], in[i])
+	}
+	return res
+}
 
-// var depth = 0
-// var iter = 0
-
-// func getArrs(adapters []int) int {
-// 	arrs := 1
-
-// 	// fmt.Println("depth", depth)
-// 	depth++
-// 	iter++
-// 	if depth > 100 || iter%1000 == 0 {
-// 		fmt.Println(depth, iter)
-// 	}
-
-// 	// Plan: when faced with a removal option,
-// 	// run and return getArrs with the item removed
-// 	for i := 2; i < len(adapters); i++ {
-// 		if adapters[i]-adapters[i-2] <= 3 {
-// 			// printArr(adapters)
-// 			// fmt.Printf("removing item %v at %v\n", adapters[i-1], i)
-// 			// Try to remove the middle adapter and run getArrs again
-// 			withoutElem := make([]int, len(adapters))
-// 			copy(withoutElem, adapters)
-// 			withoutElem = append(withoutElem[i-2:i-1], withoutElem[i:]...)
-// 			arrs += getArrs(withoutElem)
-// 		}
-// 	}
-
-// 	depth--
-
-// 	return arrs
-// }
-
-// func printArr(adapters []int) {
-// 	fmt.Print("(", adapters[0], "), ")
-// 	for _, a := range adapters[1:] {
-// 		fmt.Print(a, ", ")
-// 	}
-// 	fmt.Print("(", adapters[len(adapters)-1]+3, ")")
-// 	fmt.Printf("\n")
-// }
+func printArr(in []int) {
+	fmt.Print(in[0])
+	for _, i := range in[1:] {
+		fmt.Printf(", %v", i)
+	}
+	fmt.Print("\n")
+}

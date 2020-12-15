@@ -66,8 +66,6 @@ func Test_day14part1(t *testing.T) {
 		sum += val
 	}
 	require.Equal(t, 14722016054794, sum)
-
-	t.FailNow()
 }
 
 type floatFunc func(bits []int) []int
@@ -145,7 +143,5 @@ func Test_day14part2(t *testing.T) {
 	for _, val := range mem {
 		sum += val
 	}
-	require.Equal(t, 0, sum)
-
-	// t.FailNow()
+	require.Equal(t, 3618217244644, sum)
 }
