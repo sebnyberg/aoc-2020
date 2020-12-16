@@ -1,11 +1,12 @@
 package a15_test
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func check(err error) {
@@ -48,7 +49,5 @@ func Test_day15(t *testing.T) {
 		spokenAtTurn[lastSpoken] = turn - 1
 		lastSpoken = turn - 1 - lastSpokenAt
 	}
-	// // NOTE! Turn
-	fmt.Println(lastSpoken)
-	t.FailNow()
+	require.Equal(t, 62714, lastSpoken)
 }
