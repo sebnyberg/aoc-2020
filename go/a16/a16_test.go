@@ -8,13 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-)
 
-func check(err error) {
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
+	"github.com/stretchr/testify/require"
+)
 
 type RangeRule struct {
 	start int
@@ -22,10 +18,10 @@ type RangeRule struct {
 }
 
 func Test_day16(t *testing.T) {
-	f, err := os.Open("testinput")
+	f, err := os.Open("input")
 	check(err)
 	sc := bufio.NewScanner(f)
-	rules := make(map[string][]RangeRule)
+	validations := make(map[string][]RangeRule)
 
 	// scan rules
 	for sc.Scan() {
@@ -34,7 +30,7 @@ func Test_day16(t *testing.T) {
 			break
 		}
 		ruleparts := strings.Split(row, ":")
-		rulename := ruleparts[0]
+		ruleName := ruleparts[0]
 		ruleranges := strings.Split(ruleparts[1], "or")
 		for _, rulerange := range ruleranges {
 			rangeparts := strings.Split(strings.Trim(rulerange, " "), "-")
@@ -42,23 +38,23 @@ func Test_day16(t *testing.T) {
 			check(err)
 			end, err := strconv.Atoi(rangeparts[1])
 			check(err)
-			if _, exists := rules[rulename]; exists {
-				rules[rulename] = append(rules[rulename], RangeRule{start, end})
+			if _, exists := validations[ruleName]; exists {
+				validations[ruleName] = append(validations[ruleName], RangeRule{start, end})
 				continue
 			}
-			rules[rulename] = []RangeRule{{start, end}}
+			validations[ruleName] = []RangeRule{{start, end}}
 		}
 	}
 
 	// Scan your ticket
-	var ticket []int
+	// var ticket []int
 	sc.Scan() // Skip header
 	for sc.Scan() {
 		row := sc.Text()
 		if row == "" {
 			break
 		}
-		ticket = parseTicket(row)
+		// ticket = parseTicket(row)
 	}
 
 	// Scan nearby tickets
@@ -72,18 +68,55 @@ func Test_day16(t *testing.T) {
 		nearbyTickets = append(nearbyTickets, parseTicket(row))
 	}
 
-	fmt.Println(ticket)
-	fmt.Println(nearbyTickets)
-	fmt.Println(rules)
-
 	// Validate nearby tickets
 	invalidFields := make([]int, 0)
+	validTickets := make([][]int, 0)
 	for _, nearbyTicket := range nearbyTickets {
-		invalidFields = append(invalidFields, validateTicket(nearbyTicket, rules)...)
+		invalidFieldsForTicket := validateTicket(nearbyTicket, validations)
+		if len(invalidFieldsForTicket) == 0 {
+			validTickets = append(validTickets, nearbyTicket)
+			continue
+		}
+		invalidFields = append(invalidFields, invalidFieldsForTicket...)
 	}
 
-	fmt.Println(invalidFields)
+	// Part 1
+	var sum int
+	for _, invalidField := range invalidFields {
+		sum += invalidField
+	}
+	require.Equal(t, 20058, sum)
 
+	// Part 2
+	ruleNameValidForField := make(map[string]int)
+
+	// For each valid ticket and field, check which rule applies
+	for ticketEntryIdx := 0; ticketEntryIdx < len(validTickets[0]); ticketEntryIdx++ {
+		// For each rule
+		for fieldName, fieldRules := range validations {
+			validForAll := true
+			// For each ticket
+			for _, validTicket := range validTickets {
+				// If none of the range rules apply, continue to next field
+				validForTicket := false
+				for _, rangeRules := range fieldRules {
+					if validTicket[ticketEntryIdx] >= rangeRules.start && validTicket[ticketEntryIdx] <= rangeRules.end {
+						validForTicket = true
+						break
+					}
+				}
+				if !validForTicket {
+					validForAll = false
+					break
+				}
+			}
+			if validForAll {
+				ruleNameValidForField[fieldName] = ticketEntryIdx
+			}
+		}
+	}
+
+	fmt.Println(ruleNameValidForField)
 	t.FailNow()
 }
 
@@ -115,4 +148,10 @@ func parseTicket(row string) []int {
 		ticket = append(ticket, n)
 	}
 	return ticket
+}
+
+func check(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
