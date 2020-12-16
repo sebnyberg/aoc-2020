@@ -16,11 +16,16 @@ func check(err error) {
 	}
 }
 
+type RangeRule struct {
+	start int
+	end   int
+}
+
 func Test_day16(t *testing.T) {
 	f, err := os.Open("testinput")
 	check(err)
 	sc := bufio.NewScanner(f)
-	rules := make(map[string][]int)
+	rules := make(map[string][]RangeRule)
 
 	// scan rules
 	for sc.Scan() {
@@ -37,7 +42,11 @@ func Test_day16(t *testing.T) {
 			check(err)
 			end, err := strconv.Atoi(rangeparts[1])
 			check(err)
-			rules[rulename] = []int{start, end}
+			if _, exists := rules[rulename]; exists {
+				rules[rulename] = append(rules[rulename], RangeRule{start, end})
+				continue
+			}
+			rules[rulename] = []RangeRule{{start, end}}
 		}
 	}
 
@@ -65,8 +74,36 @@ func Test_day16(t *testing.T) {
 
 	fmt.Println(ticket)
 	fmt.Println(nearbyTickets)
+	fmt.Println(rules)
+
+	// Validate nearby tickets
+	invalidFields := make([]int, 0)
+	for _, nearbyTicket := range nearbyTickets {
+		invalidFields = append(invalidFields, validateTicket(nearbyTicket, rules)...)
+	}
+
+	fmt.Println(invalidFields)
 
 	t.FailNow()
+}
+
+func validateTicket(ticket []int, validations map[string][]RangeRule) []int {
+	invalidFields := make([]int, 0)
+	for _, ticketEntry := range ticket {
+		isvalid := false
+		for _, validation := range validations {
+			for _, rule := range validation {
+				if ticketEntry >= rule.start && ticketEntry <= rule.end {
+					isvalid = true
+					break
+				}
+			}
+		}
+		if !isvalid {
+			invalidFields = append(invalidFields, ticketEntry)
+		}
+	}
+	return invalidFields
 }
 
 func parseTicket(row string) []int {
