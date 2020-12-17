@@ -16,22 +16,25 @@ type P struct {
 	x int
 	y int
 	z int
+	w int
 }
 
 func Test_Nearby(t *testing.T) {
-	nearby := P{1, 1, 1}.Nearby(1)
-	require.Equal(t, 26, len(nearby))
+	nearby := P{1, 1, 1, 1}.Nearby(1)
+	require.Equal(t, 80, len(nearby))
 }
 
 func (p P) Nearby(dist int) []P {
 	nearby := make([]P, 0, int(math.Pow(float64(1+2*dist), 3))-1)
-	for z := p.z - dist; z <= p.z+dist; z++ {
-		for y := p.y - dist; y <= p.y+dist; y++ {
-			for x := p.x - dist; x <= p.x+dist; x++ {
-				if z == p.z && y == p.y && x == p.x {
-					continue
+	for w := p.w - dist; w <= p.w+dist; w++ {
+		for z := p.z - dist; z <= p.z+dist; z++ {
+			for y := p.y - dist; y <= p.y+dist; y++ {
+				for x := p.x - dist; x <= p.x+dist; x++ {
+					if w == p.w && z == p.z && y == p.y && x == p.x {
+						continue
+					}
+					nearby = append(nearby, P{x, y, z, w})
 				}
-				nearby = append(nearby, P{x, y, z})
 			}
 		}
 	}
@@ -52,10 +55,8 @@ func Test_day17(t *testing.T) {
 	grid := parseGrid("input")
 
 	printGrid(grid)
-	// printGrid(grid)
 	for i := 0; i < 6; i++ {
 		grid = cycleActive(grid)
-		// printGrid(grid)
 	}
 	nactive := 0
 	for _, active := range grid {
@@ -64,9 +65,7 @@ func Test_day17(t *testing.T) {
 		}
 	}
 	fmt.Println(nactive)
-	// cycleActive(grid)
-	// next := cycleActive(grid)
-	// printGrid(next)
+	// require.Equal(t, 362, nactive)
 	t.FailNow()
 }
 
@@ -124,16 +123,16 @@ func parseGrid(fpath string) map[P]bool {
 	f, err := os.Open(fpath)
 	check(err)
 	sc := bufio.NewScanner(f)
-	var x, y, z int
+	var x, y, z, w int
 	grid := make(map[P]bool)
 	for sc.Scan() {
 		row := sc.Text()
 		for _, ch := range row {
 			switch ch {
 			case '#':
-				grid[P{x, y, z}] = true
+				grid[P{x, y, z, w}] = true
 			case '.':
-				grid[P{x, y, z}] = false
+				grid[P{x, y, z, w}] = false
 			default:
 				panic(ch)
 			}
@@ -151,8 +150,8 @@ const maxInt = int(^uint(0) >> 1)
 func printGrid(grid map[P]bool) {
 	// Put all points in a grid
 	// Collect max x,y,z for padding later on
-	minx, miny, minz := maxInt, maxInt, maxInt
-	maxx, maxy, maxz := minInt, minInt, minInt
+	minx, miny, minz, minw := maxInt, maxInt, maxInt, maxInt
+	maxx, maxy, maxz, maxw := minInt, minInt, minInt, minInt
 	for p := range grid {
 		if minx > p.x {
 			minx = p.x
@@ -172,24 +171,29 @@ func printGrid(grid map[P]bool) {
 		if maxz < p.z {
 			maxz = p.z
 		}
+		if minw > p.w {
+			minw = p.w
+		}
+		if maxw < p.w {
+			maxw = p.w
+		}
 	}
 
 	fmt.Print("\n")
-	for z := minz; z <= maxz; z++ {
-		for y := miny; y <= maxy; y++ {
-			for x := minx; x <= maxx; x++ {
-				// p, exists := grid[P{x, y, z}]
-				// if !exists {
-				// 	log.Fatalf("missing grid point at %v", P{x, y, z})
-				// }
-				if grid[P{x, y, z}] {
-					fmt.Print("#")
-				} else {
-					fmt.Print(".")
+	for w := minw; w <= maxw; w++ {
+		for z := minz; z <= maxz; z++ {
+			fmt.Printf("z=%v, w=%v\n", z, w)
+			for y := miny; y <= maxy; y++ {
+				for x := minx; x <= maxx; x++ {
+					if grid[P{x, y, z, 0}] {
+						fmt.Print("#")
+					} else {
+						fmt.Print(".")
+					}
 				}
+				fmt.Print("\n")
 			}
 			fmt.Print("\n")
 		}
-		fmt.Print("\n\n")
 	}
 }
