@@ -64,9 +64,7 @@ func Test_day17(t *testing.T) {
 			nactive++
 		}
 	}
-	fmt.Println(nactive)
-	// require.Equal(t, 362, nactive)
-	t.FailNow()
+	require.Equal(t, 1980, nactive)
 }
 
 func cycleActive(grid map[P]bool) map[P]bool {
