@@ -2,129 +2,173 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
+func check(err error) {
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func main() {
-	fmt.Println(lex("1 + (2 * 3 ) * 3"))
+	parseValue("(1)")
 }
 
-type item struct {
-	typ itemType
-	val string
-}
-
-func (i item) String() string {
-	switch i.typ {
-	case itemTypeEOF:
-		return "EOF"
-	case itemTypeErr:
-		return i.val
-	}
-	if len(i.val) > 10 {
-		return fmt.Sprintf("%.10q...", i.val)
-	}
-	return fmt.Sprintf("%q", i.val)
-}
-
-type itemType int
-
-const (
-	itemTypeEOF itemType = iota
-	itemTypeErr
-	itemTypeMul
-	itemTypeDiv
-	itemTypeAdd
-	itemTypeSub
-	itemTypeLParen
-	itemTypeRParen
-	itemTypeNum
-)
-
-func lex(in string) []item {
-	l := &lexer{
-		input: in,
-		items: make([]item, 0),
-	}
-	for state := lexText; state != nil; {
-		state = state(l)
-	}
-	return l.items
-}
-
-type lexer struct {
-	items []item
+type parser struct {
 	input string
-	width int
 	pos   int
 	start int
+	width int
 }
 
-type stateFn func(l *lexer) stateFn
+type op int
 
-const eof = rune(0)
+const (
+	opNoop op = iota
+	opMul
+	opDiv
+	opAdd
+	opSub
+)
 
-func lexText(l *lexer) stateFn {
-	for {
-		r := l.next()
-		if r == eof {
-			fmt.Println("EOF!!")
-		}
-		switch r := l.next(); {
-		case r == eof || r == '\n':
-			fmt.Println("hehe!!")
-			return nil
-		case r == ' ':
-			l.ignore()
-		case r == '(':
-			l.emit(itemTypeLParen)
-		case r == ')':
-			l.emit(itemTypeRParen)
-		case r == '*':
-			l.emit(itemTypeMul)
-		case r == '/':
-			l.emit(itemTypeDiv)
-		case r >= '0' && r <= '9':
-			for l.accept("0123456789") {
-			}
-			l.emit(itemTypeNum)
-		}
+func (o op) String() string {
+	switch o {
+	case opNoop:
+		return ""
+	case opMul:
+		return "+"
+	case opDiv:
+		return "/"
+	case opAdd:
+		return "+"
+	case opSub:
+		return "-"
+	default:
+		return "INVALID_OP"
 	}
 }
 
-// Put an item into the list of items int he lexer
-func (l *lexer) emit(typ itemType) {
-	l.items = append(l.items, item{
-		typ: typ,
-		val: l.input[l.start:l.pos],
-	})
-	l.start = l.pos
+type expr struct {
+	left  *term
+	op    op
+	right *term
 }
 
-func (l *lexer) ignore() {
-	l.start = l.pos
+func (e *expr) String() string {
+	if e.op == opNoop {
+		return e.left.String()
+	}
+	return fmt.Sprintf("%v %v %v", e.left, e.op, e.right)
 }
 
-func (l *lexer) accept(valid string) bool {
-	if strings.IndexRune(valid, l.next()) >= 0 {
+type term struct {
+	left  *factor
+	op    op
+	right *factor
+}
+
+func (t *term) String() string {
+	if t.op == opNoop {
+		return t.left.String()
+	}
+	return fmt.Sprintf("%v %v %v", t.left, t.op, t.right)
+}
+
+type factor struct {
+	num  int
+	expr *expr
+}
+
+func (f *factor) String() string {
+	if f.expr != nil {
+		return fmt.Sprintf("( %v )", f.expr)
+	}
+	return fmt.Sprintf("%v", f.num)
+}
+
+// Grammar:
+// num := [0-9]+
+// factor := num | "(" expr ")"
+// term := factor [ (add|sub) term ]
+// expr := term [ (mul|div) term ]
+func parseValue(in string) int {
+	p := &parser{input: in}
+	e := p.parseExpr()
+	fmt.Printf("%+v\n", e)
+	return 0
+}
+
+func (p *parser) parseExpr() *expr {
+	var e expr
+	e.left = p.parseTerm()
+	return &e
+}
+
+func (p *parser) parseTerm() *term {
+	var t term
+	t.left = p.parseFactor()
+	return &t
+}
+
+func (p *parser) parseFactor() *factor {
+	var f factor
+	if p.accept("0123456789") {
+		n, err := strconv.Atoi(p.input[p.start:p.pos])
+		check(err)
+		f.num = n
+		return &f
+	}
+
+	if p.skip("(") {
+		f.expr = p.parseExpr()
+		if !p.skip(")") {
+			panic("found no matching right parenthesis after expression")
+		}
+		return &f
+	}
+	panic("encountered non-numeric factor and no lparen")
+}
+
+// skip past the provided string, returning true
+// if any characters were skipped
+func (p *parser) skip(chset string) (skipped bool) {
+	for strings.ContainsRune(chset, p.next()) {
+		skipped = true
+		p.ignore()
+	}
+	p.backup()
+	return skipped
+}
+
+func (p *parser) ignore() {
+	p.start = p.pos
+}
+
+func (p *parser) accept(valid string) bool {
+	p.skip(" ")
+	fmt.Println("checking ", valid)
+	if strings.ContainsRune(valid, p.next()) {
 		return true
 	}
-	l.backup()
+	p.backup()
 	return false
 }
 
-func (l *lexer) backup() {
-	l.pos -= l.width
+func (p *parser) backup() {
+	p.pos -= p.width
 }
 
-func (l *lexer) next() (ch rune) {
-	if l.pos >= len(l.input) {
-		fmt.Println("returning eof")
+const eof = rune(0)
+
+func (p *parser) next() (ch rune) {
+	if p.pos >= len(p.input) {
 		return eof
 	}
-
-	ch, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
-	l.pos += l.width
+	ch, p.width = utf8.DecodeRuneInString(p.input[p.pos:])
+	p.pos += p.width
 	return ch
 }
