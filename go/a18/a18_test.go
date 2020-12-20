@@ -18,7 +18,7 @@ func Test_day18(t *testing.T) {
 		row := sc.Text()
 		sum += parse(row).value()
 	}
-	require.Equal(t, 0, sum)
+	require.Equal(t, 88534268715686, sum)
 }
 
 func Test_parser(t *testing.T) {
