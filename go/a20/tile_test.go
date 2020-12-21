@@ -68,3 +68,33 @@ func Test_Tile_Borders(t *testing.T) {
 	want := [8]uint{1, 4, 5, 5, 7, 7, 3, 6}
 	require.Equal(t, got, want)
 }
+
+func Test_Tile_MatchBorders(t *testing.T) {
+	firstTile := `#...##.#..
+..#.#..#.#
+.###....#.
+###.##.##.
+.###.#####
+.##.#....#
+#...######
+.....#..##
+#.####...#
+#.##...##.`
+	secondTile := `..###..###
+###...#.#.
+..#....#..
+.#.#.#..##
+##...#.###
+##.##.###.
+####.#...#
+#...##..#.
+##..#.....
+..##.#..#.`
+	first := a20.TileFromString(firstTile)
+	second := a20.TileFromString(secondTile)
+	second.FlipX()
+	second.RotateRight()
+	firstBorders := a20.BorderValues(first.Pixels)
+	couldMatch := second.MatchBorders(nil, nil, nil, []uint{firstBorders[2]})
+	require.Equal(t, true, couldMatch)
+}
