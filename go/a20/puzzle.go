@@ -2,7 +2,10 @@ package a20
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"log"
+	"strconv"
 	"strings"
 )
 
@@ -56,10 +59,44 @@ func ParsePuzzle(r io.Reader) Puzzle {
 	return NewPuzzle(tiles)
 }
 
-// func FindCornerTiles(tiles []Tile) (res [4]Tile) {
-// Corner tiles are tiles which have two borders that are not
-// shared with other tiles
-// }
+func (p *Puzzle) Solve() {
+	// Create a map of border values -> tile
+	borderTiles := make(map[uint][]TileID)
+	for tileID, tile := range p.tiles {
+		for _, border := range BorderValues(tile.Pixels) {
+			if _, exists := borderTiles[border]; !exists {
+				borderTiles[border] = make([]TileID, 0, 1)
+			}
+			borderTiles[border] = append(borderTiles[border], tileID)
+		}
+	}
+
+	// Find corner pieces
+	edgeTileEdges := make(map[TileID][]uint)
+	for tileID, tile := range p.tiles {
+		for _, tileBorder := range BorderValues(tile.Pixels) {
+			switch len(borderTiles[tileBorder]) {
+			case 1:
+				if _, exists := edgeTileEdges[tileID]; !exists {
+					edgeTileEdges[tileID] = make([]uint, 0)
+				}
+				edgeTileEdges[tileID] = append(edgeTileEdges[tileID], tileBorder)
+			case 2:
+			default:
+				log.Fatalf("invalid number of matching edges: %v", len(borderTiles[tileBorder]))
+			}
+		}
+	}
+	sum := 1
+	for tileID, edges := range edgeTileEdges {
+		if len(edges) == 4 {
+			n, _ := strconv.Atoi(string(tileID))
+			sum *= n
+		}
+	}
+
+	fmt.Println(sum)
+}
 
 // func (p *Puzzle) Solve() bool {
 
