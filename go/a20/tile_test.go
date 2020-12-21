@@ -95,6 +95,6 @@ func Test_Tile_MatchBorders(t *testing.T) {
 	second.FlipX()
 	second.RotateRight()
 	firstBorders := a20.BorderValues(first.Pixels)
-	couldMatch := second.MatchBorders(nil, nil, nil, []uint{firstBorders[2]})
+	couldMatch := second.Orient(nil, nil, nil, []uint{firstBorders[2]})
 	require.Equal(t, true, couldMatch)
 }

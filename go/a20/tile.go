@@ -148,7 +148,7 @@ func BorderValues(pixels [][]bool) (res [8]uint) {
 	return
 }
 
-func (t *Tile) MatchBorders(topBorders []uint, rightBorders []uint, bottomBorders []uint, leftBorders []uint) bool {
+func (t *Tile) Orient(topBorders []uint, rightBorders []uint, bottomBorders []uint, leftBorders []uint) bool {
 	matches := func(borders [8]uint) bool {
 		if len(topBorders) == 2 {
 			// Either must match

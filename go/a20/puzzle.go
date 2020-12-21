@@ -4,32 +4,47 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"strings"
 )
 
 type Puzzle struct {
-	tiles    map[TileID]Tile
-	solution [][]string
+	tiles       map[TileID]*Tile
+	puzzleTiles map[TileID]*PuzzleTile
+}
+
+type PuzzleTile struct {
+	ID     TileID
+	tile   *Tile
+	top    *PuzzleTile
+	right  *PuzzleTile
+	bottom *PuzzleTile
+	left   *PuzzleTile
 }
 
 func (p Puzzle) String() string {
 	var sb strings.Builder
-	if len(p.solution) == 0 {
-		for _, tile := range p.tiles {
-			sb.WriteRune('\n')
-			sb.WriteString(tile.String())
-			sb.WriteRune('\n')
-		}
+	// if len(p.solution) == 0 {
+	for _, tile := range p.tiles {
 		sb.WriteRune('\n')
-		return sb.String()
+		sb.WriteString(tile.String())
+		sb.WriteRune('\n')
 	}
-	return ""
+	sb.WriteRune('\n')
+	return sb.String()
+	// }
+	// return ""
 }
 
-func NewPuzzle(tiles map[TileID]Tile) Puzzle {
+func NewPuzzle(tiles map[TileID]*Tile) Puzzle {
 	p := Puzzle{
-		tiles: tiles,
+		tiles:       tiles,
+		puzzleTiles: make(map[TileID]*PuzzleTile),
+	}
+	for tileID, tile := range tiles {
+		p.puzzleTiles[tileID] = &PuzzleTile{
+			ID:   tileID,
+			tile: tile,
+		}
 	}
 	return p
 }
@@ -37,7 +52,7 @@ func NewPuzzle(tiles map[TileID]Tile) Puzzle {
 // ParsePuzzle parses tiles from the provided reader
 func ParsePuzzle(r io.Reader) Puzzle {
 	sc := bufio.NewScanner(r)
-	tiles := make(map[TileID]Tile)
+	tiles := make(map[TileID]*Tile)
 	for sc.Scan() {
 		p := strings.Split(sc.Text(), " ")
 		id := strings.TrimRight(p[1], ":")
@@ -52,69 +67,104 @@ func ParsePuzzle(r io.Reader) Puzzle {
 			tileSB.WriteRune('\n')
 			tileSB.WriteString(row)
 		}
-		tiles[TileID(id)] = TileFromString(tileSB.String())
+		tile := TileFromString(tileSB.String())
+		tiles[TileID(id)] = &tile
 	}
 
 	return NewPuzzle(tiles)
 }
 
 func (p *Puzzle) Solve() {
-	// Create a map of border values -> tile
 	borderTiles := make(map[uint][]TileID)
 	for tileID, tile := range p.tiles {
 		for _, border := range BorderValues(tile.Pixels) {
 			if _, exists := borderTiles[border]; !exists {
-				borderTiles[border] = make([]TileID, 0, 1)
+				borderTiles[border] = make([]TileID, 0)
 			}
 			borderTiles[border] = append(borderTiles[border], tileID)
 		}
 	}
 
-	// List shared borders for each tile
-	tileSharedBorders := make(map[TileID][]uint)
-	for tileID, tile := range p.tiles {
-		// For each border around the tile
-		for _, tileBorder := range BorderValues(tile.Pixels) {
-			// Check how many tiles share that border
-			switch len(borderTiles[tileBorder]) {
-			case 1: // This tile is the only one for this border - it's an edge
-			case 2: // Two tiles share this border, it's a shared edge
-				if _, exists := tileSharedBorders[tileID]; !exists {
-					tileSharedBorders[tileID] = make([]uint, 0)
+	// Pick any starting tile
+	var anyTileID TileID
+	for tileID := range p.puzzleTiles {
+		anyTileID = tileID
+		break
+	}
+
+	done := make(map[TileID]bool)
+	todo := map[TileID]bool{anyTileID: true}
+	addTodo := func(id TileID) {
+		if _, exists := done[id]; !exists {
+			todo[id] = true
+		}
+	}
+
+	for {
+		if len(todo) == 0 {
+			break
+		}
+		// pick first tileID in todo
+		var curID TileID
+		for curID = range todo {
+			break
+		}
+
+		borders := BorderValues(p.tiles[curID].Pixels)
+		// For each border with current rotation / flip
+		for j := 0; j < 4; j++ {
+			border := borders[2*j]
+			// Check if there is a bordering tile ID which is not the current tile
+			if len(borderTiles[border]) > 2 {
+				panic("ERROR")
+			}
+			for _, borderingTileID := range borderTiles[border] {
+				if borderingTileID == curID {
+					continue
 				}
-				tileSharedBorders[tileID] = append(tileSharedBorders[tileID], tileBorder)
-			default: // There should only be 1 or 2 tiles for a given border
-				log.Fatalf("invalid number of matching edges: %v", len(borderTiles[tileBorder]))
+				addTodo(p.puzzleTiles[borderingTileID].ID)
+				switch j {
+				case 0: // top
+					if !p.tiles[borderingTileID].Orient(nil, nil, []uint{border}, nil) {
+						panic("failed to orient tile")
+					}
+					p.puzzleTiles[curID].top = p.puzzleTiles[borderingTileID]
+				case 1: // right
+					if !p.puzzleTiles[borderingTileID].tile.Orient(nil, nil, nil, []uint{border}) {
+						panic("failed to orient tile")
+					}
+					p.puzzleTiles[curID].right = p.puzzleTiles[borderingTileID]
+				case 2: // bottom
+					if !p.puzzleTiles[borderingTileID].tile.Orient([]uint{border}, nil, nil, nil) {
+						panic("failed to orient tile")
+					}
+					p.puzzleTiles[curID].bottom = p.puzzleTiles[borderingTileID]
+				case 3: // left
+					if !p.puzzleTiles[borderingTileID].tile.Orient(nil, []uint{border}, nil, nil) {
+						panic("failed to orient tile")
+					}
+					p.puzzleTiles[curID].left = p.puzzleTiles[borderingTileID]
+				}
 			}
 		}
+
+		done[curID] = true
+		delete(todo, curID)
 	}
 
-	cornerTiles := make([]TileID, 0)
-	edgeTiles := make([]TileID, 0)
-	innerTiles := make([]TileID, 0)
-	for tileID, edges := range tileSharedBorders {
-		switch len(edges) {
-		case 4:
-			cornerTiles = append(cornerTiles, tileID)
-		case 6:
-			edgeTiles = append(edgeTiles, tileID)
-		case 8:
-			innerTiles = append(innerTiles, tileID)
-		default:
-			log.Fatalf("invalid number of tiles: %v", len(edges))
+	// Find any tile
+	for _, puzzleTile := range p.puzzleTiles {
+		// Move up until nil
+		for {
+			if puzzleTile.top == nil {
+				break
+			}
+			puzzleTile = puzzleTile.top
 		}
+		for ; puzzleTile.left != nil; puzzleTile = puzzleTile.left {
+		}
+		fmt.Println(puzzleTile.ID)
+		fmt.Println(puzzleTile.tile)
+		break
 	}
-
-	// Pick a corner tile, flip + rotate until its edges are top/left
-	fmt.Println("corner tiles", cornerTiles, len(cornerTiles))
-	fmt.Println("edge tiles", edgeTiles, len(edgeTiles))
-	fmt.Println("inner tiles", innerTiles, len(innerTiles))
-
-	// cornerTile := p.tiles[cornerTiles[0]]
-	// cornerTileSharedBorders := tileSharedBorders[cornerTiles[0]]
 }
-
-// func (p *Puzzle) Solve() bool {
-
-// 	return true
-// }
