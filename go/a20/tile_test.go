@@ -1,57 +1,56 @@
-package a20
+package a20_test
 
 import (
+	"aoc2020/a20"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func Test_parsePixels(t *testing.T) {
-	for _, tc := range []string{"##..#.....", "..##.#..#."} {
-		t.Run(tc, func(t *testing.T) {
-			pixels := pixelsFromString(tc)
-			require.Equal(t, tc, pixels.String())
-		})
-	}
+const exampleTile = `#.#
+.##
+..#`
+
+func Test_TileFromString(t *testing.T) {
+	tile := a20.TileFromString(exampleTile)
+	require.Equal(t, exampleTile, tile.String())
 }
 
-func Test_tileFromString(t *testing.T) {
-	for _, tc := range []string{
-		`..##.#..#.
-##..#.....
-#...##..#.
-####.#...#
-##.##.###.
-##...#.###
-.#.#.#..##
-..#....#..
-###...#.#.
-..###..###`,
-		`#.##...##.
-#.####...#
-.....#..##
-#...######
-.##.#....#
-.###.#####
-###.##.##.
-.###....#.
-..#.#..#.#
-#...##.#..`,
-	} {
-		t.Run(tc, func(t *testing.T) {
-			tile := tileFromString(tc)
-			require.Equal(t, tc, tile.String())
-		})
-	}
+const exampleRotated = `..#
+.#.
+###`
+
+func Test_RotateRight(t *testing.T) {
+	tile := a20.TileFromString(exampleTile)
+	rot := tile.RotateRight()
+	require.Equal(t, exampleRotated, rot.String())
+
+	// verify full rotation
+	rot = rot.RotateRight()
+	rot = rot.RotateRight()
+	rot = rot.RotateRight()
+	require.Equal(t, exampleTile, rot.String())
 }
 
-// func Test_rotateRight(t *testing.T) {
-// 	in := tile{
-// 		rows: []pixels{
-// 			pixelsFromString("##..#....."),
-// 	}
-// 	for _, tc := range []struct{
-// 		in tile
-// 		expected []tile
-// 	}
-// }
+const exampleFlipX = `#.#
+##.
+#..`
+
+func Test_FlipX(t *testing.T) {
+	tile := a20.TileFromString(exampleTile)
+	rot := tile.FlipX()
+	fmt.Println(rot)
+	require.Equal(t, exampleFlipX, rot.String())
+}
+
+const exampleFlipY = `..#
+.##
+#.#`
+
+func Test_FlipY(t *testing.T) {
+	tile := a20.TileFromString(exampleTile)
+	rot := tile.FlipY()
+	fmt.Println(rot)
+	require.Equal(t, exampleFlipY, rot.String())
+}
