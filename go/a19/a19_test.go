@@ -13,7 +13,7 @@ import (
 )
 
 func Test_ruleMatcher(t *testing.T) {
-	f, err := os.Open("input")
+	f, err := os.Open("testinput3")
 	check(err)
 	sc := bufio.NewScanner(f)
 	rows := make([]string, 0)
@@ -25,15 +25,16 @@ func Test_ruleMatcher(t *testing.T) {
 	}
 	m := parse(rows)
 
-	var ntot int
-	for sc.Scan() {
-		input := sc.Text()
-		if m.match(input) {
-			ntot++
-		}
-	}
-	require.Equal(t, 0, ntot)
-	t.FailNow()
+	require.Equal(t, true, m.match("aaaaabbaabaaaaababaa"))
+	// var ntot int
+	// for sc.Scan() {
+	// 	input := sc.Text()
+	// 	if m.match(input) {
+	// 		ntot++
+	// 	}
+	// }
+	// require.Equal(t, 0, ntot)
+	// t.FailNow()
 }
 
 type ruleFn func(s string) (matched bool, width int)
@@ -54,8 +55,10 @@ func parse(ruleRows []string) ruleMatcher {
 	m := ruleMatcher{
 		rules: make(map[int]ruleFn),
 	}
-	for id, row := range ruleRows {
+	for _, row := range ruleRows {
 		assignParts := strings.Split(row, ":")
+		id, err := strconv.Atoi(assignParts[0])
+		check(err)
 
 		// Parse literal
 		if strings.ContainsRune(assignParts[1], '"') {
