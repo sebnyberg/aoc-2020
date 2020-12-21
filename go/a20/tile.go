@@ -69,35 +69,44 @@ func (t Tile) String() string {
 	return sb.String()
 }
 
-func (t Tile) RotateRight() Tile {
-	rot := NewTile(t.width)
-	if rot.Flipped {
-		rot.Rotation = t.Rotation - 1
+func (t *Tile) RotateRight() {
+	if t.Flipped {
+		t.Rotation = t.Rotation - 1
 	} else {
-		rot.Rotation = t.Rotation + 1
+		t.Rotation = t.Rotation + 1
 	}
-	rot.Rotation %= 4
+	t.Rotation %= 4
+	newPixels := make([][]bool, t.width)
+	for i := range t.Pixels {
+		newPixels[i] = make([]bool, t.width)
+	}
+
 	for i := range t.Pixels {
 		for j := range t.Pixels[i] {
-			rot.Pixels[j][t.width-1-i] = t.Pixels[i][j]
+			newPixels[j][t.width-1-i] = t.Pixels[i][j]
 		}
 	}
-	return rot
+	t.Pixels = newPixels
 }
 
-func (t Tile) FlipX() Tile {
-	flip := NewTile(t.width)
-	flip.Flipped = !t.Flipped
+func (t *Tile) FlipX() {
+	t.Flipped = !t.Flipped
+	newPixels := make([][]bool, t.width)
+	for i := range t.Pixels {
+		newPixels[i] = make([]bool, t.width)
+	}
 	for i := range t.Pixels {
 		for j := range t.Pixels[i] {
-			flip.Pixels[i][t.width-1-j] = t.Pixels[i][j]
+			newPixels[i][t.width-1-j] = t.Pixels[i][j]
 		}
 	}
-	return flip
+	t.Pixels = newPixels
 }
 
-func (t Tile) FlipY() Tile {
-	return t.FlipX().RotateRight().RotateRight()
+func (t *Tile) FlipY() {
+	t.FlipX()
+	t.RotateRight()
+	t.RotateRight()
 }
 
 type Borders struct {
@@ -139,6 +148,72 @@ func BorderValues(pixels [][]bool) (res [8]uint) {
 	return
 }
 
+func (t *Tile) Rotate(topBorders []uint, rightBorders []uint, bottomBorders []uint, leftBorders []uint) bool {
+	matches := func(borders [8]uint) bool {
+		if len(topBorders) == 2 {
+			// Either must match
+			if borders[0] != topBorders[0] && borders[0] != topBorders[1] {
+				return false
+			}
+		} else if len(topBorders) == 1 {
+			if borders[0] != topBorders[0] {
+				return false
+			}
+		}
+
+		if len(rightBorders) == 2 {
+			// Either must match
+			if borders[2] != rightBorders[0] && borders[2] != rightBorders[1] {
+				return false
+			}
+		} else if len(rightBorders) == 1 {
+			if borders[2] != rightBorders[0] {
+				return false
+			}
+		}
+
+		if len(bottomBorders) == 2 {
+			// Either must match
+			if borders[4] != bottomBorders[0] && borders[4] != bottomBorders[1] {
+				return false
+			}
+		} else if len(bottomBorders) == 1 {
+			if borders[4] != bottomBorders[0] {
+				return false
+			}
+		}
+
+		if len(leftBorders) == 2 {
+			// Either must match
+			if borders[6] != leftBorders[0] && borders[0] != leftBorders[1] {
+				return false
+			}
+		} else if len(leftBorders) == 1 {
+			if borders[6] != leftBorders[0] {
+				return false
+			}
+		}
+		return true
+	}
+
+	for i := 0; i < 4; i++ {
+		if matches(BorderValues(t.Pixels)) {
+			return true
+		}
+		t.RotateRight()
+	}
+
+	t.FlipX()
+	for i := 0; i < 4; i++ {
+		if matches(BorderValues(t.Pixels)) {
+			return true
+		}
+		t.RotateRight()
+	}
+
+	return false
+}
+
 func BoolSliceReverse(in []bool) []bool {
 	res := make([]bool, len(in))
 	for i := range in {
@@ -155,4 +230,5 @@ func BoolSliceToUint(in []bool) (res uint) {
 		}
 	}
 	return res
+
 }

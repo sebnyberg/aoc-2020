@@ -23,14 +23,14 @@ const exampleRotated = `..#
 
 func Test_Tile_RotateRight(t *testing.T) {
 	tile := a20.TileFromString(exampleTile)
-	rot := tile.RotateRight()
-	require.Equal(t, exampleRotated, rot.String())
+	tile.RotateRight()
+	require.Equal(t, exampleRotated, tile.String())
 
 	// verify full rotation
-	rot = rot.RotateRight()
-	rot = rot.RotateRight()
-	rot = rot.RotateRight()
-	require.Equal(t, exampleTile, rot.String())
+	tile.RotateRight()
+	tile.RotateRight()
+	tile.RotateRight()
+	require.Equal(t, exampleTile, tile.String())
 }
 
 const exampleFlipX = `#.#
@@ -39,8 +39,8 @@ const exampleFlipX = `#.#
 
 func Test_Tile_FlipX(t *testing.T) {
 	tile := a20.TileFromString(exampleTile)
-	rot := tile.FlipX()
-	require.Equal(t, exampleFlipX, rot.String())
+	tile.FlipX()
+	require.Equal(t, exampleFlipX, tile.String())
 }
 
 const exampleFlipY = `..#
@@ -49,8 +49,8 @@ const exampleFlipY = `..#
 
 func Test_Tile_FlipY(t *testing.T) {
 	tile := a20.TileFromString(exampleTile)
-	rot := tile.FlipY()
-	require.Equal(t, exampleFlipY, rot.String())
+	tile.FlipY()
+	require.Equal(t, exampleFlipY, tile.String())
 }
 
 func check(err error) {

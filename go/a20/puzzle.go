@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 	"strings"
 )
 
@@ -71,31 +70,48 @@ func (p *Puzzle) Solve() {
 		}
 	}
 
-	// Find corner pieces
-	edgeTileEdges := make(map[TileID][]uint)
+	// List shared borders for each tile
+	tileSharedBorders := make(map[TileID][]uint)
 	for tileID, tile := range p.tiles {
+		// For each border around the tile
 		for _, tileBorder := range BorderValues(tile.Pixels) {
+			// Check how many tiles share that border
 			switch len(borderTiles[tileBorder]) {
-			case 1:
-				if _, exists := edgeTileEdges[tileID]; !exists {
-					edgeTileEdges[tileID] = make([]uint, 0)
+			case 1: // This tile is the only one for this border - it's an edge
+			case 2: // Two tiles share this border, it's a shared edge
+				if _, exists := tileSharedBorders[tileID]; !exists {
+					tileSharedBorders[tileID] = make([]uint, 0)
 				}
-				edgeTileEdges[tileID] = append(edgeTileEdges[tileID], tileBorder)
-			case 2:
-			default:
+				tileSharedBorders[tileID] = append(tileSharedBorders[tileID], tileBorder)
+			default: // There should only be 1 or 2 tiles for a given border
 				log.Fatalf("invalid number of matching edges: %v", len(borderTiles[tileBorder]))
 			}
 		}
 	}
-	sum := 1
-	for tileID, edges := range edgeTileEdges {
-		if len(edges) == 4 {
-			n, _ := strconv.Atoi(string(tileID))
-			sum *= n
+
+	cornerTiles := make([]TileID, 0)
+	edgeTiles := make([]TileID, 0)
+	innerTiles := make([]TileID, 0)
+	for tileID, edges := range tileSharedBorders {
+		switch len(edges) {
+		case 4:
+			cornerTiles = append(cornerTiles, tileID)
+		case 6:
+			edgeTiles = append(edgeTiles, tileID)
+		case 8:
+			innerTiles = append(innerTiles, tileID)
+		default:
+			log.Fatalf("invalid number of tiles: %v", len(edges))
 		}
 	}
 
-	fmt.Println(sum)
+	// Pick a corner tile, flip + rotate until its edges are top/left
+	fmt.Println("corner tiles", cornerTiles, len(cornerTiles))
+	fmt.Println("edge tiles", edgeTiles, len(edgeTiles))
+	fmt.Println("inner tiles", innerTiles, len(innerTiles))
+
+	// cornerTile := p.tiles[cornerTiles[0]]
+	// cornerTileSharedBorders := tileSharedBorders[cornerTiles[0]]
 }
 
 // func (p *Puzzle) Solve() bool {
