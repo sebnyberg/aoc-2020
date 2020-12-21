@@ -33,8 +33,7 @@ func Test_ruleMatcher(t *testing.T) {
 			ntot++
 		}
 	}
-	require.Equal(t, 0, ntot)
-	t.FailNow()
+	require.Equal(t, 309, ntot)
 }
 
 type ruleFn func(s string) (matched bool, width int)
