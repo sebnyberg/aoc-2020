@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 )
 
 type Puzzle struct {
 	tiles       map[TileID]*Tile
 	puzzleTiles map[TileID]*PuzzleTile
+	topLeftTile *PuzzleTile
 }
 
 type PuzzleTile struct {
@@ -21,18 +23,35 @@ type PuzzleTile struct {
 	left   *PuzzleTile
 }
 
+func (p Puzzle) PrintTileIDs() {
+	for leftTile := p.topLeftTile; leftTile != nil; leftTile = leftTile.bottom {
+		for tile := leftTile; tile != nil; tile = tile.right {
+			fmt.Printf("%v ", tile.ID)
+		}
+		fmt.Print("\n")
+	}
+}
+
 func (p Puzzle) String() string {
 	var sb strings.Builder
-	// if len(p.solution) == 0 {
-	for _, tile := range p.tiles {
-		sb.WriteRune('\n')
-		sb.WriteString(tile.String())
-		sb.WriteRune('\n')
+	if p.topLeftTile == nil {
+		panic("run solve before String()")
 	}
-	sb.WriteRune('\n')
-	return sb.String()
-	// }
-	// return ""
+	for leftTile := p.topLeftTile; leftTile != nil; leftTile = leftTile.bottom {
+		for row := 1; row < len(leftTile.tile.Pixels)-1; row++ {
+			for tile := leftTile; tile != nil; tile = tile.right {
+				for col := 1; col < len(leftTile.tile.Pixels)-1; col++ {
+					if tile.tile.Pixels[row][col] {
+						sb.WriteRune('#')
+					} else {
+						sb.WriteRune('.')
+					}
+				}
+			}
+			sb.WriteRune('\n')
+		}
+	}
+	return strings.TrimRight(sb.String(), "\n")
 }
 
 func NewPuzzle(tiles map[TileID]*Tile) Puzzle {
@@ -86,14 +105,16 @@ func (p *Puzzle) Solve() {
 	}
 
 	// Pick any starting tile
-	var anyTileID TileID
+	tileIDs := make([]TileID, 0, len(p.puzzleTiles))
 	for tileID := range p.puzzleTiles {
-		anyTileID = tileID
-		break
+		tileIDs = append(tileIDs, tileID)
 	}
+	sort.Slice(tileIDs, func(i, j int) bool {
+		return tileIDs[i] < tileIDs[j]
+	})
 
 	done := make(map[TileID]bool)
-	todo := map[TileID]bool{anyTileID: true}
+	todo := map[TileID]bool{tileIDs[0]: true}
 	addTodo := func(id TileID) {
 		if _, exists := done[id]; !exists {
 			todo[id] = true
@@ -153,18 +174,14 @@ func (p *Puzzle) Solve() {
 	}
 
 	// Find any tile
-	for _, puzzleTile := range p.puzzleTiles {
+	var topLeftTile *PuzzleTile
+	for _, topLeftTile = range p.puzzleTiles {
 		// Move up until nil
-		for {
-			if puzzleTile.top == nil {
-				break
-			}
-			puzzleTile = puzzleTile.top
+		for ; topLeftTile.top != nil; topLeftTile = topLeftTile.top {
 		}
-		for ; puzzleTile.left != nil; puzzleTile = puzzleTile.left {
+		for ; topLeftTile.left != nil; topLeftTile = topLeftTile.left {
 		}
-		fmt.Println(puzzleTile.ID)
-		fmt.Println(puzzleTile.tile)
 		break
 	}
+	p.topLeftTile = topLeftTile
 }
