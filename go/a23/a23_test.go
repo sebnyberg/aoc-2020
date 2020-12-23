@@ -68,3 +68,29 @@ func Test_Ring_RemoveWrapAround(t *testing.T) {
 	require.Equal(t, []int{4, 1, 2}, removed)
 	require.Equal(t, []int{3}, ring.Items)
 }
+
+func Test_Ring_Insert(t *testing.T) {
+	for _, tc := range []struct {
+		hasItems     []int
+		hasPos       int
+		insertItems  []int
+		insertOffset int
+		wantItems    []int
+	}{
+		{[]int{1, 2, 3}, 0, []int{4, 5}, 1, []int{1, 4, 5, 2, 3}},
+		{[]int{1, 2, 3}, 1, []int{4, 5}, 1, []int{1, 2, 4, 5, 3}},
+		{[]int{1, 2, 3}, 2, []int{4, 5}, 1, []int{1, 2, 3, 4, 5}},
+		{[]int{1, 2}, 0, []int{4, 5}, 1, []int{1, 4, 5, 2}},
+	} {
+		testName := fmt.Sprintf("has:+%v(%v)\tinsert:%+v(%v)\twant:%+v",
+			tc.hasItems, tc.hasPos, tc.insertItems, tc.insertOffset, tc.wantItems)
+		t.Run(testName, func(t *testing.T) {
+			ring := a23.Ring{
+				Items: tc.hasItems,
+				Pos:   tc.hasPos,
+			}
+			ring.Insert(tc.insertItems, tc.insertOffset)
+			require.Equal(t, tc.wantItems, ring.Items)
+		})
+	}
+}

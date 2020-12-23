@@ -23,6 +23,21 @@ func (r *Ring) CurrentPos() int {
 	return r.Pos
 }
 
+func (r *Ring) Insert(items []int, offset int) {
+	insertPos := (r.Pos + offset) % len(r.Items)
+	// edge case - insert at the end
+	if insertPos == 0 {
+		r.Items = append(r.Items, items...)
+		return
+	}
+	// make room for items (not in correct location yet)
+	r.Items = append(r.Items, items...)
+	// copy tail to correct location (at the end)
+	copy(r.Items[insertPos+len(items):], r.Items[insertPos:])
+	// copy items to correct location (in the middle)
+	copy(r.Items[insertPos:], items)
+}
+
 // Remove n items starting at the provided offset
 // returning the removed elements
 // returns an error if removal would Remove the current position
