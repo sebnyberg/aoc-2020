@@ -4,8 +4,6 @@ import (
 	"aoc2020/a23"
 	"fmt"
 	"log"
-	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,34 +31,41 @@ func findMinMax(ns []int) (min, max int) {
 func Test_a23(t *testing.T) {
 	// input := []int{3, 8, 9, 1, 2, 5, 4, 6, 7}
 	input := []int{1, 9, 8, 7, 5, 3, 4, 6, 2}
-	min, max := findMinMax(input)
 
-	ring := &a23.Ring{
-		Items: input,
+	ring := &a23.LinkedRing{
+		ItemPos: make(map[int]*a23.LinkedItem, 1e6),
 	}
+	// cba to fix this...
+	ring.Insert(input[:1])
+	ring.Insert(input[1:])
+
+	day2 := true
+	var ntotal int = 1e6
+	if day2 {
+		for i := 10; i <= ntotal; i++ {
+			ring.InsertBefore(i)
+		}
+	}
+
+	require.Equal(t, int(1e6), ring.Len)
+	require.Equal(t, ring.First.Val, input[0])
+	require.Equal(t, ring.First.Prev.Val, int(1e6))
 
 	doPrint = false
-	nmoves := 100
+	min, max := 1, ring.Len
+	var nmoves int = 1e7
 	for i := 1; i <= nmoves; i++ {
-		println("-- move", i, "--")
+		// println("-- move", i, "--")
 		makeMove(ring, min, max)
-		println()
+		// println()
 	}
 
-	fmt.Println("-- final --")
-	fmt.Printf("cups: %v\n", ring)
+	// fmt.Println("-- final --")
+	// fmt.Printf("cups: %v\n", ring)
 
-	fmt.Println("shifting so that 1 is first")
-	ring.ShiftRight(ring.Find(1))
-	fmt.Printf("cups: %v\n", ring)
-
-	resultInts, err := ring.Remove(1, len(ring.Items)-1)
-	check(err)
-	var resultsb strings.Builder
-	for _, n := range resultInts {
-		resultsb.WriteString(strconv.Itoa(n))
-	}
-	require.Equal(t, "62934785", resultsb.String())
+	ring.ShiftTo(1)
+	require.Equal(t, 693659135400, ring.First.Next.Val*ring.First.Next.Next.Val)
+	t.FailNow()
 }
 
 var doPrint = true
@@ -83,28 +88,30 @@ func printf(format string, args ...interface{}) {
 	}
 }
 
-func makeMove(ring *a23.Ring, min, max int) {
+func makeMove(ring *a23.LinkedRing, min, max int) {
 	printf("cups: %v\n", ring)
 
+	startVal := ring.First.Val
+
 	// Pick up three cups
-	pickedUp, err := ring.Remove(1, 3)
+	pickedUp := ring.Remove(3)
 	printf("pick up: %+v\n", pickedUp)
-	check(err)
 	printf("after pick up: %v\n", ring)
 
 	// Find destination cup
-	targetLabel := ring.CurrentItem() - 1
+	targetLabel := ring.First.Val - 1
 	for {
-		// If a destination cup was found, insert picked up cups in that location
-		if idx := ring.Find(targetLabel); idx != -1 {
-			println("destination:", idx+1)
-			ring.Insert(pickedUp, idx+1)
+		if ring.ShiftTo(targetLabel) {
+			printf("on insert position: %+v\n", ring)
+			ring.Insert(pickedUp)
+			printf("after insert: %+v\n", ring)
 			break
 		}
 
 		// If target label is smaller than the label of any cup,
 		// reset to the highest value
 		if targetLabel < min {
+			println("target label below min value, setting to", max)
 			targetLabel = max
 			continue
 		}
@@ -113,6 +120,10 @@ func makeMove(ring *a23.Ring, min, max int) {
 		targetLabel--
 	}
 
-	// Shift to next cup
+	// Shift to first position
+	ring.ShiftTo(startVal)
+	printf("after reset: %+v\n", ring)
+	// Shift to position to the right of the first position
 	ring.ShiftRight(1)
+	printf("one step to the right of reset: %+v\n", ring)
 }
