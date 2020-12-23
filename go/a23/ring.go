@@ -1,10 +1,26 @@
 package a23
 
-import "errors"
+import (
+	"errors"
+	"strconv"
+	"strings"
+)
 
 type Ring struct {
 	Items []int
 	Pos   int
+}
+
+func (r *Ring) String() string {
+	itemStrings := make([]string, 0, len(r.Items))
+	for idx, item := range r.Items {
+		if idx == r.CurrentPos() {
+			itemStrings = append(itemStrings, "("+strconv.Itoa(item)+")")
+			continue
+		}
+		itemStrings = append(itemStrings, strconv.Itoa(item))
+	}
+	return strings.Join(itemStrings, " ")
 }
 
 // Shift the current position in the ring n times to the right
