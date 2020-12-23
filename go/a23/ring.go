@@ -13,6 +13,19 @@ func (r *Ring) ShiftRight(n int) {
 	r.Pos %= len(r.Items)
 }
 
+// Find the provided item, returning its offset from the current index
+// returns -1 if the item could not be found
+func (r *Ring) Find(item int) (idx int) {
+	nitems := len(r.Items)
+	for i := 0; i < len(r.Items); i++ {
+		currentPos := (r.Pos + i) % nitems
+		if r.Items[currentPos] == item {
+			return i
+		}
+	}
+	return -1
+}
+
 // Return the CurrentItem item in the ring
 func (r *Ring) CurrentItem() int {
 	return r.Items[r.Pos]
