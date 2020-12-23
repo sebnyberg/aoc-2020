@@ -33,27 +33,29 @@ func (r *Ring) Remove(offset int, n int) ([]int, error) {
 	if n >= len(r.Items) {
 		return nil, errors.New("cannot remove all items from the ring")
 	}
-	res := make([]int, n)
+	res := make([]int, 0, n)
 	nitems := len(r.Items)
 	nremoved := 0
-	startPos := (r.Pos % offset) % nitems
-	removePos := startPos
-	for ; nremoved < n; nremoved, removePos = nremoved+1, (removePos+1)%nitems {
+	startPos := (r.Pos + offset) % nitems
+
+	for removePos := (r.Pos + offset) % nitems; nremoved < n; nremoved++ {
 		if removePos == r.Pos {
 			return nil, errors.New("current position cannot be removed")
 		}
 		res = append(res, r.Items[removePos])
+		removePos++
+		removePos %= nitems
 	}
 
 	// remove slice from start of list
-	if startPos <= removePos {
-		r.Items = append(r.Items[:startPos], r.Items[removePos+1:]...)
+	finalRemovedPos := (r.Pos + offset + n - 1) % nitems
+	if startPos <= finalRemovedPos {
+		r.Items = append(r.Items[:startPos], r.Items[finalRemovedPos+1:]...)
 		return res, nil
 	}
 
 	// start position is greater than the remove position
 	// the wrap-around requires removal from both the head and tail
-	r.Items = r.Items[startPos-1:]  // remove tail
-	r.Items = r.Items[removePos+1:] // remove head
+	r.Items = r.Items[finalRemovedPos+1 : startPos]
 	return res, nil
 }
