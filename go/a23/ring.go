@@ -82,10 +82,20 @@ func (r *Ring) Remove(offset int, n int) ([]int, error) {
 		removePos %= nitems
 	}
 
+	// when done, account for removed items
+	defer func() {
+		if r.Pos+1+n > nitems {
+			removedFromTail := nitems - (r.Pos + 1)
+			removedFromHead := n - removedFromTail
+			r.Pos -= removedFromHead
+		}
+	}()
+
 	// remove slice from start of list
 	finalRemovedPos := (r.Pos + offset + n - 1) % nitems
 	if startPos <= finalRemovedPos {
 		r.Items = append(r.Items[:startPos], r.Items[finalRemovedPos+1:]...)
+		// reduce current index by number of removed items
 		return res, nil
 	}
 

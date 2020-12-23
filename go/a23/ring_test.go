@@ -32,40 +32,46 @@ func Test_Ring_ShiftRight(t *testing.T) {
 func Test_Ring_Remove(t *testing.T) {
 	for _, tc := range []struct {
 		in          []int
+		pos         int
 		offset      int
 		n           int
 		wantErr     error
 		wantRemoved []int
 		wantRemains []int
+		wantPos     int
 	}{
-		{[]int{3, 2, 4, 1, 5}, 1, 3, nil, []int{2, 4, 1}, []int{3, 5}},
-		{[]int{3, 5}, 1, 2, errors.New("cannot remove all items from the ring"), nil, []int{3, 5}},
-		{[]int{3, 5}, 2, 1, errors.New("current position cannot be removed"), nil, []int{3, 5}},
-		{[]int{3, 5, 4}, 2, 2, errors.New("current position cannot be removed"), nil, []int{3, 5, 4}},
+		{[]int{3, 2, 4, 1, 5}, 0, 1, 3, nil, []int{2, 4, 1}, []int{3, 5}, 0},
+		{[]int{1, 2}, 1, 1, 1, nil, []int{1}, []int{2}, 0},
+		{[]int{1, 2, 3, 4}, 2, 1, 3, nil, []int{4, 1, 2}, []int{3}, 0},
+		{[]int{3, 5}, 0, 1, 2, errors.New("cannot remove all items from the ring"), nil, []int{3, 5}, 0},
+		{[]int{3, 5}, 0, 2, 1, errors.New("current position cannot be removed"), nil, []int{3, 5}, 0},
+		{[]int{3, 5, 4}, 0, 2, 2, errors.New("current position cannot be removed"), nil, []int{3, 5, 4}, 0},
 	} {
 		testName := fmt.Sprintf("in:%+v\toffset:%v\tn:%v", tc.in, tc.offset, tc.n)
 		t.Run(testName, func(t *testing.T) {
 			ring := a23.Ring{
 				Items: tc.in,
+				Pos:   tc.pos,
 			}
 			gotRemoved, err := ring.Remove(tc.offset, tc.n)
 			require.Equal(t, tc.wantErr, err)
 			require.Equal(t, tc.wantRemoved, gotRemoved)
 			require.Equal(t, tc.wantRemains, ring.Items)
+			require.Equal(t, tc.wantPos, ring.Pos)
 		})
 	}
 }
 
-func Test_Ring_RemoveWrapAround(t *testing.T) {
-	ring := a23.Ring{
-		Items: []int{1, 2, 3, 4},
-		Pos:   2,
-	}
-	removed, err := ring.Remove(1, 3)
-	require.Nil(t, err)
-	require.Equal(t, []int{4, 1, 2}, removed)
-	require.Equal(t, []int{3}, ring.Items)
-}
+// func Test_Ring_RemoveWrapAround(t *testing.T) {
+// 	ring := a23.Ring{
+// 		Items: []int{1, 2, 3, 4},
+// 		Pos:   2,
+// 	}
+// 	removed, err := ring.Remove(1, 3)
+// 	require.Nil(t, err)
+// 	require.Equal(t, []int{4, 1, 2}, removed)
+// 	require.Equal(t, []int{3}, ring.Items)
+// }
 
 func Test_Ring_Insert(t *testing.T) {
 	for _, tc := range []struct {
@@ -76,10 +82,10 @@ func Test_Ring_Insert(t *testing.T) {
 		wantItems    []int
 		wantPos      int
 	}{
-		// {[]int{1, 2, 3}, 0, []int{4, 5}, 1, []int{1, 4, 5, 2, 3}, 0},
-		// {[]int{1, 2, 3}, 1, []int{4, 5}, 1, []int{1, 2, 4, 5, 3}, 1},
-		// {[]int{1, 2, 3}, 2, []int{4, 5}, 1, []int{1, 2, 3, 4, 5}, 2},
-		// {[]int{1, 2}, 0, []int{4, 5}, 1, []int{1, 4, 5, 2}, 0},
+		{[]int{1, 2, 3}, 0, []int{4, 5}, 1, []int{1, 4, 5, 2, 3}, 0},
+		{[]int{1, 2, 3}, 1, []int{4, 5}, 1, []int{1, 2, 4, 5, 3}, 1},
+		{[]int{1, 2, 3}, 2, []int{4, 5}, 1, []int{1, 2, 3, 4, 5}, 2},
+		{[]int{1, 2}, 0, []int{4, 5}, 1, []int{1, 4, 5, 2}, 0},
 		{[]int{1, 2}, 1, []int{4, 5}, 2, []int{1, 4, 5, 2}, 3},
 	} {
 		testName := fmt.Sprintf("has:+%v(%v)\tinsert:%+v(%v)\twant:%+v",
