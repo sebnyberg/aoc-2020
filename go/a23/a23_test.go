@@ -16,16 +16,16 @@ func Test_a23(t *testing.T) {
 	// ring := a23.Ring{
 	// 	Items: input,
 	// }
-	// Pick up three cups
+	// // Pick up three cups
 	// pickedUp, err := ring.Remove(1, 3)
 	// check(err)
 
-	// Find destination cup
+	// // Find destination cup
 	// targetLabel := ring.CurrentItem() - 1
 	// for {
-	// if idx := ring.Find(targetLabel) {
-
-	// }
+	// 	if idx := ring.Find(targetLabel); idx != -1 {
+	// 		ring.Insert(pickedUp, idx)
+	// 	}
 	// if targetLabel < lowestValue {
 	// 	targetLabel = highestValue
 	// }

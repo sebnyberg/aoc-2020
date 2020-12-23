@@ -45,10 +45,17 @@ func (r *Ring) Insert(items []int, offset int) {
 	}
 	// make room for items (not in correct location yet)
 	r.Items = append(r.Items, items...)
+
 	// copy tail to correct location (at the end)
 	copy(r.Items[insertPos+len(items):], r.Items[insertPos:])
+
 	// copy items to correct location (in the middle)
 	copy(r.Items[insertPos:], items)
+
+	// adjust position to account for new items
+	if insertPos <= r.Pos {
+		r.Pos += len(items)
+	}
 }
 
 // Remove n items starting at the provided offset
