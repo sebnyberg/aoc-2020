@@ -1,31 +1,22 @@
 package main
 
 import (
-	"log"
+	"aoc2020/a24"
+	"fmt"
+	"time"
 )
 
-func check(err error) {
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
-
 func main() {
-	// runDay := func(inputPath string, handler func(f *os.File)) {
-	// 	f, err := os.Open(inputPath)
-	// 	check(err)
-	// 	defer f.Close()
-	// 	handler(f)
-	// }
-
-	// if len(os.Args) <= 1 {
-	// 	log.Fatalln("provide the AOC day as an argument to get its solution, e.g. 'go run main.go 04'")
-	// }
-
-	// switch os.Args[1] {
-	// case "04":
-	// 	runDay("a04/input", func(f *os.File) {
-	// 		fmt.Printf("valid passports: %v\n", a04.Run(f))
-	// 	})
-	// }
+	defer func(start time.Time) {
+		fmt.Printf("Elapsed time: %v\n", time.Since(start))
+	}(time.Now())
+	moves := a24.ParseAllMoves("a24/input")
+	floor := a24.NewFloor()
+	for _, tileMoves := range moves {
+		floor.FlipTile(tileMoves)
+	}
+	for i := 0; i < 100; i++ {
+		floor.NextDay()
+	}
+	fmt.Println(floor.CountBlackTiles())
 }
