@@ -65,7 +65,6 @@ func Test_a23(t *testing.T) {
 
 	ring.ShiftTo(1)
 	require.Equal(t, 693659135400, ring.First.Next.Val*ring.First.Next.Next.Val)
-	t.FailNow()
 }
 
 var doPrint = true
@@ -89,29 +88,29 @@ func printf(format string, args ...interface{}) {
 }
 
 func makeMove(ring *a23.LinkedRing, min, max int) {
-	printf("cups: %v\n", ring)
+	// printf("cups: %v\n", ring)
 
 	startVal := ring.First.Val
 
 	// Pick up three cups
 	pickedUp := ring.Remove(3)
-	printf("pick up: %+v\n", pickedUp)
-	printf("after pick up: %v\n", ring)
+	// printf("pick up: %+v\n", pickedUp)
+	// printf("after pick up: %v\n", ring)
 
 	// Find destination cup
 	targetLabel := ring.First.Val - 1
 	for {
 		if ring.ShiftTo(targetLabel) {
-			printf("on insert position: %+v\n", ring)
+			// printf("on insert position: %+v\n", ring)
 			ring.Insert(pickedUp)
-			printf("after insert: %+v\n", ring)
+			// printf("after insert: %+v\n", ring)
 			break
 		}
 
 		// If target label is smaller than the label of any cup,
 		// reset to the highest value
 		if targetLabel < min {
-			println("target label below min value, setting to", max)
+			// println("target label below min value, setting to", max)
 			targetLabel = max
 			continue
 		}
@@ -122,8 +121,8 @@ func makeMove(ring *a23.LinkedRing, min, max int) {
 
 	// Shift to first position
 	ring.ShiftTo(startVal)
-	printf("after reset: %+v\n", ring)
+	// printf("after reset: %+v\n", ring)
 	// Shift to position to the right of the first position
 	ring.ShiftRight(1)
-	printf("one step to the right of reset: %+v\n", ring)
+	// printf("one step to the right of reset: %+v\n", ring)
 }
